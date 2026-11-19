@@ -152,6 +152,60 @@ void greedyScheduler(
     }
 }
 
+int backtrackingScheduler(
+    int courseIndex,
+    struct Course courses[],
+    struct Room rooms[],
+    struct Assignment assignments[],
+    int courseCount,
+    int roomCount,
+    int slotCount,
+    int assignmentCount
+) {
+    // Base case: all courses are scheduled
+    if (courseIndex == courseCount) {
+        return 1;
+    }
+
+    // Try every time slot
+    for (int slot = 0; slot < slotCount; slot++) {
+
+        // Try every room
+        for (int room = 0; room < roomCount; room++) {
+
+            // Check whether this assignment is valid
+            if (validateAssignment(
+                courseIndex, room, slot,
+                courses, rooms, assignments,
+                assignmentCount, courseCount,
+                roomCount, slotCount
+            )) {
+
+                assignments[assignmentCount].courseIndex = courseIndex;
+                assignments[assignmentCount].roomIndex = room;
+                assignments[assignmentCount].slotIndex = slot;
+
+                // Schedule the next course
+                if (backtrackingScheduler(
+                    courseIndex + 1,
+                    courses, rooms, assignments,
+                    courseCount, roomCount, slotCount,
+                    assignmentCount + 1
+                )) {
+                    return 1;
+                }
+
+                // Undo the assignment if the next course fails
+                assignments[assignmentCount].courseIndex = -1;
+                assignments[assignmentCount].roomIndex = -1;
+                assignments[assignmentCount].slotIndex = -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
 // Display the generated timetable
 void displayTimetable(
     struct Course courses[],
