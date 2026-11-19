@@ -1,25 +1,59 @@
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 
-// Course details
+#define MAX_COURSES 50
+#define MAX_ROOMS 20
+#define MAX_SLOTS 20
+
 struct Course {
     int courseId;
     int facultyId;
     int studentCount;
 };
 
-// Room details
 struct Room {
     int roomId;
     int capacity;
 };
 
-// Timetable entry
 struct Assignment {
     int courseIndex;
     int roomIndex;
     int slotIndex;
 };
+
+// Read an integer within the given range
+int readInt(char message[], int min, int max) {
+    char line[100];
+    char *end;
+    long value;
+
+    while (1) {
+        printf("%s", message);
+
+        if (fgets(line, sizeof(line), stdin) == NULL) {
+            printf("Input error. Try again.\n");
+            continue;
+        }
+
+        value = strtol(line, &end, 10);
+
+        while (isspace((unsigned char)*end)) {
+            end++;
+        }
+
+        if (end == line || *end != '\0' ||
+            value < min || value > max) {
+            printf("Invalid input. Enter a value between %d and %d.\n",
+                   min, max);
+            continue;
+        }
+
+        return (int)value;
+    }
+}
 
 // Check if a course can be scheduled
 int validateAssignment(
@@ -31,10 +65,12 @@ int validateAssignment(
     struct Assignment assignments[],
     int assignmentCount,
     int courseCount,
-    int roomCount
+    int roomCount,
+    int slotCount
 ) {
     if (courseIndex < 0 || courseIndex >= courseCount ||
-        roomIndex < 0 || roomIndex >= roomCount) {
+        roomIndex < 0 || roomIndex >= roomCount ||
+        slotIndex < 0 || slotIndex >= slotCount) {
         return 0;
     }
 
@@ -83,16 +119,15 @@ void greedyScheduler(
 
         int scheduled = 0;
 
-        // Try each time slot
         for (int slot = 0; slot < slotCount; slot++) {
 
-            // Try each room
             for (int room = 0; room < roomCount; room++) {
 
                 if (validateAssignment(
                     i, room, slot,
                     courses, rooms, assignments,
-                    *assignmentCount, courseCount, roomCount
+                    *assignmentCount, courseCount,
+                    roomCount, slotCount
                 )) {
 
                     assignments[*assignmentCount].courseIndex = i;
@@ -100,7 +135,6 @@ void greedyScheduler(
                     assignments[*assignmentCount].slotIndex = slot;
 
                     (*assignmentCount)++;
-
                     scheduled = 1;
                     break;
                 }
@@ -126,67 +160,134 @@ void displayTimetable(
     int assignmentCount
 ) {
     printf("\nGenerated Timetable\n");
-    printf("-------------------------------\n");
-
-    printf("Course\tRoom\tSlot\n");
+    printf("--------------------------------------------------\n");
+    printf("Course\tFaculty\tStudents\tRoom\tSlot\n");
 
     for (int i = 0; i < assignmentCount; i++) {
         int c = assignments[i].courseIndex;
         int r = assignments[i].roomIndex;
 
-        printf("%d\t%d\t%d\n",
+        printf("%d\t%d\t%d\t\t%d\t%d\n",
                courses[c].courseId,
+               courses[c].facultyId,
+               courses[c].studentCount,
                rooms[r].roomId,
-               assignments[i].slotIndex);
+               assignments[i].slotIndex + 1);
     }
 
-    printf("-------------------------------\n");
+    printf("--------------------------------------------------\n");
     printf("Total scheduled courses: %d\n", assignmentCount);
 }
 
+// Enter course and room details
+void enterData(
+    struct Course courses[],
+    struct Room rooms[],
+    int *courseCount,
+    int *roomCount,
+    int *slotCount
+) {
+    printf("\nEnter Course Details\n");
+
+    *courseCount = readInt("Number of courses: ", 1, MAX_COURSES);
+
+    for (int i = 0; i < *courseCount; i++) {
+        printf("\nCourse %d\n", i + 1);
+
+        courses[i].courseId =
+            readInt("Course ID: ", 1, 99999);
+
+        courses[i].facultyId =
+            readInt("Faculty ID: ", 1, 99999);
+
+        courses[i].studentCount =
+            readInt("Number of students: ", 1, 10000);
+    }
+
+    printf("\nEnter Room Details\n");
+
+    *roomCount = readInt("Number of rooms: ", 1, MAX_ROOMS);
+
+    for (int i = 0; i < *roomCount; i++) {
+        printf("\nRoom %d\n", i + 1);
+
+        rooms[i].roomId =
+            readInt("Room ID: ", 1, 99999);
+
+        rooms[i].capacity =
+            readInt("Room capacity: ", 1, 10000);
+    }
+
+    *slotCount = readInt("\nNumber of time slots: ", 1, MAX_SLOTS);
+
+    printf("\nData entered successfully.\n");
+}
+
 int main() {
+    struct Course courses[MAX_COURSES];
+    struct Room rooms[MAX_ROOMS];
+    struct Assignment assignments[MAX_COURSES];
 
-    // Sample courses
-    struct Course courses[3] = {
-        {101, 1, 40},
-        {102, 2, 35},
-        {103, 1, 25}
-    };
-
-    // Available rooms
-    struct Room rooms[3] = {
-        {201, 30},
-        {202, 40},
-        {203, 50}
-    };
-
-    struct Assignment assignments[10];
-
-    int courseCount = 3;
-    int roomCount = 3;
-    int slotCount = 3;
+    int courseCount = 0;
+    int roomCount = 0;
+    int slotCount = 0;
     int assignmentCount = 0;
 
-    printf("University Timetable System\n\n");
+    int dataEntered = 0;
+    int timetableGenerated = 0;
+    int choice;
 
-    // Generate timetable using Greedy
-    greedyScheduler(
-        courses,
-        rooms,
-        assignments,
-        courseCount,
-        roomCount,
-        slotCount,
-        &assignmentCount
-    );
+    while (1) {
+        printf("\nUniversity Timetable System\n\n");
+        printf("1. Enter course and room details\n");
+        printf("2. Generate timetable (Greedy)\n");
+        printf("3. View timetable\n");
+        printf("4. Exit\n");
 
-    // Display the result
-    displayTimetable(
-        courses,
-        rooms,
-        assignments,
-        assignmentCount
-    );
+        choice = readInt("\nEnter your choice: ", 1, 4);
 
-    return 0;
+        switch (choice) {
+
+            case 1:
+                enterData(
+                    courses, rooms,
+                    &courseCount, &roomCount, &slotCount
+                );
+
+                dataEntered = 1;
+                timetableGenerated = 0;
+                break;
+
+            case 2:
+                if (!dataEntered) {
+                    printf("\nPlease enter course and room details first.\n");
+                    break;
+                }
+
+                greedyScheduler(
+                    courses, rooms, assignments,
+                    courseCount, roomCount, slotCount,
+                    &assignmentCount
+                );
+
+                timetableGenerated = 1;
+                printf("\nTimetable generation completed.\n");
+                break;
+
+            case 3:
+                if (!timetableGenerated) {
+                    printf("\nPlease generate the timetable first.\n");
+                    break;
+                }
+
+                displayTimetable(
+                    courses, rooms, assignments, assignmentCount
+                );
+                break;
+
+            case 4:
+                printf("\nExiting the system.\n");
+                return 0;
+        }
+    }
 }
