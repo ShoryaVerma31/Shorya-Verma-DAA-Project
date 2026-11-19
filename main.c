@@ -295,10 +295,11 @@ int main() {
         printf("\nUniversity Timetable System\n\n");
         printf("1. Enter course and room details\n");
         printf("2. Generate timetable (Greedy)\n");
-        printf("3. View timetable\n");
-        printf("4. Exit\n");
+        printf("3. Generate timetable (Backtracking)\n");
+        printf("4. View timetable\n");
+        printf("5. Exit\n");
 
-        choice = readInt("\nEnter your choice: ", 1, 4);
+        choice = readInt("\nEnter your choice: ", 1, 5);  // readInt takes input within the range 1,5 (min,max)
 
         switch (choice) {
 
@@ -329,6 +330,29 @@ int main() {
                 break;
 
             case 3:
+                if (!dataEntered) {
+                    printf("\nPlease enter course and room details first.\n");
+                    break;
+                }
+
+                assignmentCount = 0;
+
+                if (backtrackingScheduler(0, courses, rooms, assignments, courseCount, roomCount, slotCount,0)) {
+                    assignmentCount = courseCount;
+                    timetableGenerated = 1;
+
+                    printf("\nComplete timetable generated using Backtracking.\n");
+                }
+                else {
+                    assignmentCount = 0;
+                    timetableGenerated = 0;
+
+                    printf("\nNo complete timetable could be generated.\n");
+                }
+
+                break;
+
+            case 4:
                 if (!timetableGenerated) {
                     printf("\nPlease generate the timetable first.\n");
                     break;
@@ -339,7 +363,7 @@ int main() {
                 );
                 break;
 
-            case 4:
+            case 5:
                 printf("\nExiting the system.\n");
                 return 0;
         }
