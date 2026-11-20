@@ -32,10 +32,11 @@ int readInt(char message[], int min, int max) {
 
     while (1) {
         printf("%s", message);
+        fflush(stdout);
 
         if (fgets(line, sizeof(line), stdin) == NULL) {
-            printf("Input error. Try again.\n");
-            continue;
+            printf("\nInput stream closed.\n");
+            exit(1);
         }
 
         value = strtol(line, &end, 10);
@@ -46,6 +47,7 @@ int readInt(char message[], int min, int max) {
 
         if (end == line || *end != '\0' ||
             value < min || value > max) {
+
             printf("Invalid input. Enter a value between %d and %d.\n",
                    min, max);
             continue;
@@ -277,6 +279,33 @@ void enterData(
     printf("\nData entered successfully.\n");
 }
 
+void exportCSV( struct Course courses[], struct Room rooms[], struct Assignment assignments[], int assignmentCount) {
+    FILE *file = fopen("timetable.csv", "w");
+
+    if (file == NULL) {
+        printf("\nUnable to create CSV file.\n");
+        return;
+    }
+
+    fprintf(file, "Course ID,Faculty ID,Students,Room ID,Time Slot\n");
+
+    for (int i = 0; i < assignmentCount; i++) {
+        int c = assignments[i].courseIndex;
+        int r = assignments[i].roomIndex;
+
+        fprintf(file, "%d,%d,%d,%d,%d\n",
+                courses[c].courseId,
+                courses[c].facultyId,
+                courses[c].studentCount,
+                rooms[r].roomId,
+                assignments[i].slotIndex + 1);
+    }
+
+    fclose(file);
+
+    printf("\nTimetable successfully exported to timetable.csv\n");
+}
+
 int main() {
     struct Course courses[MAX_COURSES];
     struct Room rooms[MAX_ROOMS];
@@ -297,10 +326,12 @@ int main() {
         printf("2. Generate timetable (Greedy)\n");
         printf("3. Generate timetable (Backtracking)\n");
         printf("4. View timetable\n");
-        printf("5. Exit\n");
+        printf("5. Export timetable as CSV\n");
+        printf("6. Exit\n");
 
-        choice = readInt("\nEnter your choice: ", 1, 5);  // readInt takes input within the range 1,5 (min,max)
-
+        // readInt takes input within the range 1,6 (min,max)
+        choice = readInt("\nEnter your choice: ", 1, 6); 
+        
         switch (choice) {
 
             case 1:
@@ -364,6 +395,15 @@ int main() {
                 break;
 
             case 5:
+                if (!timetableGenerated) {
+                    printf("\nPlease generate the timetable first.\n");
+                    break;
+                }
+
+                exportCSV(courses, rooms, assignments,assignmentCount);
+                break;
+
+            case 6:
                 printf("\nExiting the system.\n");
                 return 0;
         }
